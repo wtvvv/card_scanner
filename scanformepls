@@ -1,0 +1,62 @@
+import pyautogui
+import keyboard
+import time
+
+FILENUMBER_BEGIN = 1430
+FILENAME = "UGO00xxxx_common_12MP"
+
+filenumber = FILENUMBER_BEGIN
+pyautogui.moveTo(165, 545)
+pyautogui.scroll(2000)
+pyautogui.scroll(-28)
+
+while not keyboard.is_pressed('esc'):
+    if keyboard.is_pressed('s'):
+        try:
+            #scan
+            pyautogui.click(1660, 980)
+            time.sleep(40)
+            #rotate
+            rotated = False
+            while not rotated:
+                # try:
+                #     pyautogui.locateCenterOnScreen('renamebutton.png')
+                # except ImageNotFoundException:
+                #     pass
+                time.sleep(2)
+                if(not (pyautogui.locateCenterOnScreen('rotatebutton.png') is None)):
+                   pyautogui.click(974, 57)
+                   rotated = True
+            time.sleep(10)
+
+            #rename
+            # pyautogui.click(63, 375)
+            # pyautogui.rightClick()
+            # pyautogui.click(115, 386)
+            x, y, width, height = pyautogui.locateOnScreen('newimagebox.png')
+            pyautogui.rightClick(x, y)
+            pyautogui.move(20, 20)
+            pyautogui.click()
+            pyautogui.write(FILENAME.replace('xxxx', str(filenumber)))
+            filenumber += 1
+            time.sleep(1)
+            x, y = pyautogui.locateCenterOnScreen('renamebutton.png')
+            pyautogui.click(x, y)
+            #adjust scroll
+            # pyautogui.moveTo(165, 545)
+            # pyautogui.scroll(-28)         
+
+        except KeyboardInterrupt:
+            print("interrupt")
+            #cancel
+            pyautogui.click(1751, 981)
+            #delete
+            x, y = pyautogui.locateOnScreen('newimagebox.png')
+            x += 10
+            y += 10
+            pyautogui.click()
+            pyautogui.rightClick()
+            pyautogui.move(20,40)
+            pyautogui.click()
+            x, y = pyautogui.locateOnScreen('yesbutton.png')
+            pyautogui.click(x, y)

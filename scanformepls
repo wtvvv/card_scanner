@@ -4,15 +4,19 @@ import time
 from threading import Thread
 from threading import Event
 
-FILENUMBER_BEGIN = 1430
+FILENUMBER_BEGIN = 1433
 FILENAME = "UGO00xxxx_common_12MP"
+scanning = False
+cancelling = False
 
 def scanCard(filenumber, exitEvent):
+    global scanning
+    print('scanning')
     #scan
     pyautogui.click(1660, 980)
-    exit.wait(40)
-    if exit.is_set():
-        return
+    exitEvent.wait(40)
+    if exitEvent.is_set():
+        exit()
     #rotate
     rotated = False
     while not rotated:
@@ -24,25 +28,61 @@ def scanCard(filenumber, exitEvent):
         if(not (pyautogui.locateCenterOnScreen('rotatebutton.png') is None)):
             pyautogui.click(974, 57)
             rotated = True
-    exit.wait(10)
-    if exit.is_set():
-        return
+    exitEvent.wait(10)
+    if exitEvent.is_set(): 
+        scanning = False
+        exit()
 
     #rename
-    # pyautogui.click(63, 375)
-    # pyautogui.rightClick()
-    # pyautogui.click(115, 386)
     x, y, width, height = pyautogui.locateOnScreen('newimagebox.png')
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
     pyautogui.click()
-    pyautogui.write(FILENAME.replace('xxxx', str(filenumber)))
+    pyautogui.write(FILENAME.replace('xxxx', str(filenumber)), interval = 0)
     time.sleep(1)
     x, y = pyautogui.locateCenterOnScreen('renamebutton.png')
     pyautogui.click(x, y)
-    #adjust scroll
-    # pyautogui.moveTo(165, 545)
-    # pyautogui.scroll(-28)         
+    scanning = False
+    print("finished scanning")
+
+def cancelCard(exitEvent):
+    global cancelling
+    global scanning
+    exitEvent.set()
+    time.sleep(0.5)
+    #cancel
+    pyautogui.click(1751, 981)
+    #delete
+    
+    ###
+    # deleted = False
+    # while not deleted:
+    #     try:
+    #         pyautogui.locateOnScreen('newimagebox.png')
+    #     except ImageNotFoundException:
+    #         pass
+    ###
+    deleted = False
+    while not deleted:
+        time.sleep(2)
+        if(not (pyautogui.locateOnScreen('newimagebox.png') is None)):
+            deleted = True
+
+    # time.sleep(15)
+    x, y, width, height  = pyautogui.locateOnScreen('newimagebox.png')
+    pyautogui.click(x, y)
+    pyautogui.rightClick()
+    pyautogui.move(20,40)
+    pyautogui.click()
+    time.sleep(0.5)
+    x, y = pyautogui.locateCenterOnScreen('yesbutton.png')
+    pyautogui.click(x, y)
+    exitEvent.clear()
+
+    cancelling = False
+    scanning = False
+    print("finished cancelling")
+    exit()
 
 if __name__ == "__main__":
     #go to Regula software!!!
@@ -55,32 +95,29 @@ if __name__ == "__main__":
     pyautogui.scroll(-28)
     #set 12MP and single-page!!!
 
-    #set up key_detect_enabled
-    key_detect_enabled = True
-
-    while not keyboard.is_pressed('esc'):
-        if keyboard.is_pressed('s') and key_detect_enabled:
+    while True:
+        if keyboard.is_pressed('ctrl+s') and not scanning:
+            scanning = True
             scanThread = Thread(target = scanCard, args=(filenumber, exitEvent))
-            filenumber += 1
             scanThread.start()
-
-        if keyboard.is_pressed('c') and key_detect_enabled:
-            exitEvent.set()
-            print("interrupt")
             time.sleep(0.5)
-            #cancel
-            pyautogui.click(1751, 981)
-            #delete
-            x, y, width, height  = pyautogui.locateOnScreen('newimagebox.png')
-            # x += 10
-            # y += 10
-            pyautogui.click()
-            pyautogui.rightClick()
-            pyautogui.move(20,40)
-            pyautogui.click()
-            x, y = pyautogui.locateOnScreen('yesbutton.png')
-            pyautogui.click(x, y)
-            exit.clear()
+            filenumber += 1
+            #change scanning variable!!!
+
+        if keyboard.is_pressed('ctrl+c') and not cancelling:
+            cancelling = True
+            print("interrupt")
+            cancelThread = Thread(target = cancelCard, args=(exitEvent, ))
+            cancelThread.start()
+            time.sleep(0.5)
+            filenumber -= 1
+            #change cancelling variable!!!
+        
+        if keyboard.is_pressed('esc'):
+            exitEvent.set()
+            break
+        
+    print('exited')
 
         #set up disable key_detect!!!
         # if keyboard.is_pressed(hotkey(Ctrl))

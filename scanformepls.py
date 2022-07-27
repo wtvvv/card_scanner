@@ -107,8 +107,9 @@ if __name__ == "__main__":
             cancelThread = Thread(target = cancelCard, args=(exitEvent, ))
             cancelThread.start()
         
-        # if keyboard.is_pressed('r+n') and :
-
+        if keyboard.is_pressed('ctrl+alt+r') and canScan and not canCancel:
+            filenumber = pyautogui.prompt(text='Enter starting file number', title='' , default='')
+        
         if keyboard.is_pressed('esc'):
             exitEvent.set()
             break

@@ -4,7 +4,7 @@ import time
 from threading import Thread
 from threading import Event
 
-FILENUMBER_BEGIN = 1438
+FILENUMBER_BEGIN = 1651
 FILENAME = "UGO00xxxx_common_12MP"
 canScan = True
 canCancel = False
@@ -82,8 +82,12 @@ def cancelCard(exitEvent):
 
 if __name__ == "__main__":
     #go to Regula software
-    x, y = pyautogui.locateCenterOnScreen('regulabutton.png')
-    pyautogui.click(x, y)
+    try:
+        regulaX, regulaY = pyautogui.locateCenterOnScreen('regulabutton.png')
+        pyautogui.click(regulaX, regulaY)
+    except TypeError:
+        pass
+    pyautogui.alert('set to 12MP and single-page format')
 
     #setup
     exitEvent = Event()
@@ -108,8 +112,11 @@ if __name__ == "__main__":
             cancelThread.start()
         
         if keyboard.is_pressed('ctrl+alt+r') and canScan and not canCancel:
-            filenumber = pyautogui.prompt(text='Enter starting file number', title='' , default='')
-        
+            try:
+                filenumber = int(pyautogui.prompt(text='Enter starting file number', title='' , default=''))
+            except:
+                pass
+
         if keyboard.is_pressed('esc'):
             exitEvent.set()
             break

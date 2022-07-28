@@ -4,3 +4,5 @@
 ```ctrl+x```: cancel scan
 
 ```ctrl+alt+r```: re-enter new file-number
+
+```esc```: end program

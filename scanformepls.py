@@ -4,8 +4,11 @@ import time
 from threading import Thread
 from threading import Event
 
-FILENUMBER_BEGIN = 1651
+FILENUMBER_BEGIN = 1673
 FILENAME = "UGO00xxxx_common_12MP"
+FILEMENU_REGION = (5, 286, 320, 708) #set to None if unknown
+YES_OR_RENAME_REGION = (850, 450, 360, 160) #set to None if unknown
+ROTATE_REGION = (900, 15, 250, 75) #set to None if unknown
 canScan = True
 canCancel = False
 
@@ -26,23 +29,23 @@ def scanCard(filenumber, exitEvent):
         # except ImageNotFoundException:
         #     pass
         time.sleep(2)
-        if(not (pyautogui.locateCenterOnScreen('rotatebutton.png') is None)):
+        if(not (pyautogui.locateCenterOnScreen('rotatebutton.png', region=ROTATE_REGION) is None)):
             pyautogui.click(974, 57)
             rotated = True
     exitEvent.wait(10)
     if exitEvent.is_set():
         exit()
     #rename
-    x, y, width, height = pyautogui.locateOnScreen('newimagebox.png')
+    x, y, width, height = pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION)
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
     pyautogui.click()
     pyautogui.write(FILENAME.replace('xxxx', str(filenumber)), interval = 0.1)
     time.sleep(1)
-    x, y = pyautogui.locateCenterOnScreen('renamebutton.png')
+    x, y = pyautogui.locateCenterOnScreen('renamebutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)
 
-    #implement alert!!!
+    #alert
     pyautogui.alert(text='NEEEEEEEEEXXXXXTTTTTTTT CAAAAAARRRRRRRDDDDDDD PLLLEAAASEE', title='Scan finished', button='OK')
     #exit
     canScan = True
@@ -62,23 +65,32 @@ def cancelCard(exitEvent):
     deleted = False
     while not deleted:
         time.sleep(2)
-        if(not (pyautogui.locateOnScreen('newimagebox.png') is None)):
+        if(not (pyautogui.locateOnScreen('newimagebox.png', region=FILEMENU_REGION) is None)):
             deleted = True
     # time.sleep(15)
-    x, y, width, height  = pyautogui.locateOnScreen('newimagebox.png')
+    x, y, width, height  = pyautogui.locateOnScreen('newimagebox.png', region=FILEMENU_REGION)
     pyautogui.click(x, y)
     pyautogui.rightClick()
-    pyautogui.move(20,40)
-    pyautogui.click()
     time.sleep(0.2)
-    x, y = pyautogui.locateCenterOnScreen('yesbutton.png')
+    
+    # pyautogui.move(20,40)
+    # pyautogui.click()
+    # time.sleep(0.2)
+    x, y, width, height = pyautogui.locateOnScreen('deletebutton.png', region=FILEMENU_REGION)
+    pyautogui.click(x, y)
+    pyautogui.sleep(0.3)
+
+    x, y = pyautogui.locateCenterOnScreen('yesbutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)
     exitEvent.clear()
+    #implement alert!!!
     #exit
     canScan = True
     canCancel = False
     print("finished cancelling")
     exit()
+
+#implement rename function!!!
 
 if __name__ == "__main__":
     #go to Regula software
@@ -122,3 +134,9 @@ if __name__ == "__main__":
             break
         
     print('exiting main thread...')
+
+#turn button presses into a function?!!!
+#def buttonpress():
+
+#implement dynamic click for scan, rotate, and cancel!!!
+#implement clicking regulabutton before clicking anything else!!!

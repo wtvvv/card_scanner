@@ -3,9 +3,13 @@ import keyboard
 import time
 from threading import Thread
 from threading import Event
+import tkinter as tk
 
-FILENUMBER_BEGIN = 1782
-FILENAME = "UGO00xxxx_common_12MP"
+gameType = "UGO00"
+cardType = "common"
+filenumber = 1700
+# FILENUMBER_BEGIN = 1676
+# FILENAME = "UGO00xxxx_common_12MP"
 FILEMENU_REGION = (5, 286, 320, 708) #set to None if unknown
 YES_OR_RENAME_REGION = (850, 450, 360, 160) #set to None if unknown
 ROTATE_REGION = (900, 15, 250, 75) #set to None if unknown
@@ -35,7 +39,7 @@ def scanCard(filenumber, exitEvent):
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
     pyautogui.click()
-    pyautogui.write(FILENAME.replace('xxxx', str(filenumber)), interval = 0.1)
+    pyautogui.write(gameType + str(filenumber) + '_' + cardType + '_12MP', interval = 0.1)
     time.sleep(0.2)
     x, y = pyautogui.locateCenterOnScreen('renamebutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)    
@@ -92,7 +96,38 @@ def cancelCard(exitEvent):
     print("finished cancelling")
     exit()
 
-#implement rename function!!!
+
+def submit(root, selectedGameType, selectedCardType, enteredFileNumber):
+    global gameType
+    global cardType
+    global filenumber
+    gameType = str(selectedGameType.get())
+    cardType = str(selectedCardType.get())
+    filenumber = int(enteredFileNumber.get())
+    root.destroy()
+
+def rename():
+    root = tk.Tk()
+    selectedGameType = tk.StringVar(root)
+    selectedCardType = tk.StringVar(root)
+    enteredFileNumber = tk.StringVar(root)
+
+    tk.Label(root, text = 'Select game type:').grid(column=0, row=0, sticky=tk.W, padx=5, pady=2)
+    tk.Radiobutton(root, text = 'Pokemon', variable = selectedGameType, value = "PKM00", tristatevalue=0).grid(column=0, row=1, sticky=tk.W, padx=5, pady=2)
+    tk.Radiobutton(root, text = "YuGiOh", variable = selectedGameType, value = "UGO00", tristatevalue=0).grid(column=0, row=2, sticky=tk.W, padx=5, pady=2)
+
+    tk.Label(root, text = 'Select card type:').grid(column=1, row=0, sticky=tk.W, padx=5, pady=2)
+    tk.Radiobutton(root, text = 'Common', variable = selectedCardType, value = "common", tristatevalue=0).grid(column=1, row=1, sticky=tk.W, padx=5, pady=2)
+    tk.Radiobutton(root, text = "Holo", variable = selectedCardType, value = "holo", tristatevalue=0).grid(column=1, row=2, sticky=tk.W, padx=5, pady=2)
+
+    tk.Label(root, text = 'Enter new file number:').grid(column=0, row=3, sticky=tk.W, padx=5, pady=7)
+    tk.Entry(root, textvariable = enteredFileNumber).grid(column=1, row=3, sticky=tk.W, padx=5, pady=7)
+
+    tk.Button(root,text = "Submit", command=lambda: submit(root, selectedGameType, selectedCardType, enteredFileNumber)).grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+    tk.Button(root,text = "Cancel", command=root.destroy).grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
+
+    tk.mainloop()
+    return gameType + str(filenumber) + '_' + cardType + '_12MP'
 
 if __name__ == "__main__":
     #go to Regula software
@@ -105,10 +140,10 @@ if __name__ == "__main__":
 
     #setup
     exitEvent = Event()
-    filenumber = FILENUMBER_BEGIN
     pyautogui.moveTo(165, 545)
     pyautogui.scroll(2000)
     pyautogui.scroll(-28)
+    rename()
 
     while True:
         if keyboard.is_pressed('ctrl+space') and canScan:
@@ -127,8 +162,9 @@ if __name__ == "__main__":
         
         if keyboard.is_pressed('ctrl+alt+r') and canScan and not canCancel:
             try:
-                pyautogui.confirm('Enter option Gfg', buttons =['A', 'B', 'C'])
-                filenumber = int(pyautogui.prompt(text='Enter starting file number', title='' , default=''))
+                print('renaming')
+                current_name = rename()
+                print('finished renaming: ' + current_name)
             except:
                 pass
 

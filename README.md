@@ -6,3 +6,5 @@
 ```ctrl+alt+r```: re-enter new file-number
 
 ```esc```: end program
+
+Modify batch file and create desktop shortcut (to the batch file) for use

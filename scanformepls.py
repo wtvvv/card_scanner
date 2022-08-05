@@ -1,3 +1,4 @@
+from select import select
 import pyautogui
 import keyboard
 import time
@@ -7,7 +8,7 @@ import tkinter as tk
 
 gameType = "UGO00"
 cardType = "common"
-filenumber = 1700
+filenumber = 1860
 # FILENUMBER_BEGIN = 1676
 # FILENAME = "UGO00xxxx_common_12MP"
 FILEMENU_REGION = (5, 286, 320, 708) #set to None if unknown
@@ -33,14 +34,15 @@ def scanCard(filenumber, exitEvent):
         # except ImageNotFoundException:
         #     pass
         time.sleep(2)
-        if(not (pyautogui.locateCenterOnScreen('rotatebutton.png', region=ROTATE_REGION) is None)):
+        # if(not (pyautogui.locateCenterOnScreen('rotatebutton.png', region=ROTATE_REGION) is None)):
+        if(not (pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION) is None)):
             doneScanning = True
     x, y, width, height = pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION)
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
     pyautogui.click()
     pyautogui.write(gameType + str(filenumber) + '_' + cardType + '_12MP', interval = 0.1)
-    time.sleep(0.2)
+    time.sleep(0.3)
     x, y = pyautogui.locateCenterOnScreen('renamebutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)    
     time.sleep(1)
@@ -82,9 +84,12 @@ def cancelCard(exitEvent):
     # pyautogui.move(20,40)
     # pyautogui.click()
     # time.sleep(0.2)
-    x, y, width, height = pyautogui.locateOnScreen('deletebutton.png', region=FILEMENU_REGION)
-    pyautogui.click(x, y)
-    pyautogui.sleep(0.3)
+    try:
+        x, y, width, height = pyautogui.locateOnScreen('deletebutton.png', region=FILEMENU_REGION)
+        pyautogui.click(x, y)
+        pyautogui.sleep(0.3)
+    except TypeError:
+        print(TypeError)
 
     x, y = pyautogui.locateCenterOnScreen('yesbutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)
@@ -101,9 +106,12 @@ def submit(root, selectedGameType, selectedCardType, enteredFileNumber):
     global gameType
     global cardType
     global filenumber
-    gameType = str(selectedGameType.get())
-    cardType = str(selectedCardType.get())
-    filenumber = int(enteredFileNumber.get())
+    if selectedGameType.get() != '':
+        gameType = str(selectedGameType.get())
+    if selectedCardType.get() != '':
+        cardType = str(selectedCardType.get())
+    if enteredFileNumber.get() != '':
+        filenumber = int(enteredFileNumber.get())
     root.destroy()
 
 def rename():
@@ -140,9 +148,9 @@ if __name__ == "__main__":
 
     #setup
     exitEvent = Event()
-    pyautogui.moveTo(165, 545)
-    pyautogui.scroll(2000)
-    pyautogui.scroll(-28)
+    # pyautogui.moveTo(165, 545)
+    # pyautogui.scroll(2000)
+    # pyautogui.scroll(-28)
     rename()
 
     while True:

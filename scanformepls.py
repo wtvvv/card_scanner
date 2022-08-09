@@ -186,7 +186,8 @@ if __name__ == "__main__":
         
         if keyboard.is_pressed('ctrl+down') and canScan and not canCancel:
             try:
-                filenumber -= 1
+                if filenumber > 0:
+                    filenumber -= 1
                 pyautogui.alert(text=f'Decrement filenumber to: {filenumber}', title='decremented filenumber', button='OK')
                 print('increment filenumber to', filenumber)
             except:

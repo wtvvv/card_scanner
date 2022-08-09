@@ -10,4 +10,8 @@ Modify batch file and create desktop shortcut (to the batch file) for use
 
 ```ctrl+alt+r```: re-enter new file-number
 
+```ctrl+up```: increment file-number
+
+```ctrl+down```: decrement file-number
+
 ```esc```: end program

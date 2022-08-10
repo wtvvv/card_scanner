@@ -27,8 +27,8 @@ def scanCard(filenumber, exitEvent):
     if exitEvent.is_set():
         exit()
     #rename
-    doneScanning = False
-    while not doneScanning:
+    canRename = False
+    while not canRename:
         # try:
         #     pyautogui.locateCenterOnScreen('renamebutton.png')
         # except ImageNotFoundException:
@@ -36,7 +36,7 @@ def scanCard(filenumber, exitEvent):
         time.sleep(2)
         # if(not (pyautogui.locateCenterOnScreen('rotatebutton.png', region=ROTATE_REGION) is None)):
         if(not (pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION) is None)):
-            doneScanning = True
+            canRename = True
     x, y, width, height = pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION)
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
@@ -45,9 +45,13 @@ def scanCard(filenumber, exitEvent):
     time.sleep(0.3)
     x, y = pyautogui.locateCenterOnScreen('renamebutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)    
-    time.sleep(1)
 
     #rotate
+    canRotate = False
+    while not canRotate:
+        time.sleep(1)
+        if(not (pyautogui.locateOnScreen('rotatebutton.png',  region=ROTATE_REGION) is None)):
+            canRotate = True
     pyautogui.click(974, 57)
     exitEvent.wait(6)
     if exitEvent.is_set():

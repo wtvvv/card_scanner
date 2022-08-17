@@ -27,16 +27,19 @@ def scanCard(filenumber, exitEvent):
     if exitEvent.is_set():
         exit()
     #rename
-    canRename = False
-    while not canRename:
-        # try:
-        #     pyautogui.locateCenterOnScreen('renamebutton.png')
-        # except ImageNotFoundException:
-        #     pass
+    doneScanning = False
+    while not doneScanning:
         time.sleep(2)
-        # if(not (pyautogui.locateCenterOnScreen('rotatebutton.png', region=ROTATE_REGION) is None)):
-        if(not (pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION) is None)):
-            canRename = True
+        if(not (pyautogui.locateCenterOnScreen('rotatebutton.png',  region=ROTATE_REGION) is None)):
+            doneScanning = True
+    x, y = pyautogui.locateCenterOnScreen('rotatebutton.png',  region=ROTATE_REGION)
+    pyautogui.click(x, y)
+    # pyautogui.click(974, 57)
+    exitEvent.wait(6)
+    if exitEvent.is_set():
+        exit()
+
+    #rotate
     x, y, width, height = pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION)
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)
@@ -45,17 +48,7 @@ def scanCard(filenumber, exitEvent):
     time.sleep(0.3)
     x, y = pyautogui.locateCenterOnScreen('renamebutton.png', region=YES_OR_RENAME_REGION)
     pyautogui.click(x, y)    
-
-    #rotate
-    canRotate = False
-    while not canRotate:
-        time.sleep(1)
-        if(not (pyautogui.locateOnScreen('rotatebutton.png',  region=ROTATE_REGION) is None)):
-            canRotate = True
-    pyautogui.click(974, 57)
-    exitEvent.wait(6)
-    if exitEvent.is_set():
-        exit()
+    time.sleep(2)
 
     #alert
     pyautogui.alert(text='NEEEEEEEEEXXXXXTTTTTTTT CAAAAAARRRRRRRDDDDDDD PLLLEAAASEE', title='Scan finished', button='OK')
@@ -92,11 +85,15 @@ def cancelCard(exitEvent):
         x, y, width, height = pyautogui.locateOnScreen('deletebutton.png', region=FILEMENU_REGION)
         pyautogui.click(x, y)
         pyautogui.sleep(0.3)
-    except TypeError:
-        print(TypeError)
+    except TypeError as e:
+        print(e)
 
-    x, y = pyautogui.locateCenterOnScreen('yesbutton.png', region=YES_OR_RENAME_REGION)
-    pyautogui.click(x, y)
+    try:
+        x, y = pyautogui.locateCenterOnScreen('yesbutton.png', region=YES_OR_RENAME_REGION)
+        pyautogui.click(x, y)
+    except TypeError as e:
+        print(e)
+    
     exitEvent.clear()
     #implement alert!!!
     #exit
@@ -146,7 +143,8 @@ if __name__ == "__main__":
     try:
         regulaX, regulaY = pyautogui.locateCenterOnScreen('regulabutton.png')
         pyautogui.click(regulaX, regulaY)
-    except TypeError:
+    except TypeError as e:
+        print(e)
         pass
     pyautogui.alert('set to 12MP and single-page format')
 

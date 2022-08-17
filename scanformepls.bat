@@ -2,7 +2,7 @@
 
 rem path to activate conda env, make sure conda env has required packages
 cd "C:\Users\Scanning"
-call conda activate basee
+call conda activate base
 echo activated conda-base
 
 rem path to project directory

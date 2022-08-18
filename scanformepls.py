@@ -40,6 +40,11 @@ def scanCard(filenumber, exitEvent):
         exit()
 
     #rotate
+    doneRotating = False
+    while not doneRotating:
+        time.sleep(1)
+        if(not (pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION) is None)):
+            doneRotating = True
     x, y, width, height = pyautogui.locateOnScreen('newimagebox.png',  region=FILEMENU_REGION)
     pyautogui.rightClick(x, y)
     pyautogui.move(20, 20)

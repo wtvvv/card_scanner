@@ -17,20 +17,23 @@ canScan = True
 canCancel = False
 
 def scanCard(filenumber, cancelEvent):
-    print('scanning')
     global canScan
     global canCancel
     #scan
+    print('scanning')
     pyautogui.click(1660, 980)
     cancelEvent.wait(40)
     if cancelEvent.is_set():
         exit()
-    #rename
+
+    #rotate
     doneScanning = False
     while not doneScanning:
         time.sleep(2)
         if(not (pyautogui.locateCenterOnScreen('rotatebutton.png',  region=ROTATE_REGION) is None)):
             doneScanning = True
+    canCancel = False #disable cancel at this stage (only allow cancel while card is scanning)
+    print('\trotating')
     x, y = pyautogui.locateCenterOnScreen('rotatebutton.png',  region=ROTATE_REGION)
     pyautogui.click(x, y)
     # pyautogui.click(974, 57)
@@ -38,7 +41,8 @@ def scanCard(filenumber, cancelEvent):
     if cancelEvent.is_set():
         exit()
 
-    #rotate
+    #rename
+    print('\trenaming')
     doneRotating = False
     while not doneRotating:
         time.sleep(1)
@@ -55,16 +59,18 @@ def scanCard(filenumber, cancelEvent):
     time.sleep(2)
 
     #alert
+    print('\tshowing alert')
     pyautogui.alert(text='NEEEEEEEEEXXXXXTTTTTTTT CAAAAAARRRRRRRDDDDDDD PLLLEAAASEE', title='Scan finished', button='OK')
     #exit
     canScan = True
-    canCancel = False
     print("finished scanning")
     exit()
 
-def keepScanning(filenumber, cancelEvent, exitEvent):
+def trackLid(cancelEvent, exitEvent):
+    print("start tracking lid")
     global canScan
     global canCancel
+    global filenumber
     lidOpen = False
     ready = False
     while not exitEvent.is_set():
@@ -81,7 +87,6 @@ def keepScanning(filenumber, cancelEvent, exitEvent):
                 lidOpen = True
         print("awaiting lid close")
         while lidOpen:
-            exitEvent.wait(1)
             if exitEvent.is_set():
                 print("exiting keepScanning thread...")
                 exit()
@@ -96,7 +101,7 @@ def keepScanning(filenumber, cancelEvent, exitEvent):
             filenumber += 1
             scanThread.start()
             ready = False
-    print("finished keepScanning")
+    print("finished tracking lid")
 
 def cancelCard(cancelEvent, exitEvent):
     print('cancelling')
@@ -112,18 +117,15 @@ def cancelCard(cancelEvent, exitEvent):
         if exitEvent.is_set():
             print('exiting cancel thread...')
             exit()
-        time.sleep(2)
         if(not (pyautogui.locateOnScreen('newimagebox.png', region=FILEMENU_REGION) is None)):
             deleted = True
-    # time.sleep(15)
     x, y, width, height  = pyautogui.locateOnScreen('newimagebox.png', region=FILEMENU_REGION)
-    pyautogui.click(x, y)
+    pyautogui.moveTo(x, y)
+    time.sleep(0.5)
+    pyautogui.click()
     pyautogui.rightClick()
     time.sleep(0.2)
-    
-    # pyautogui.move(20,40)
-    # pyautogui.click()
-    # time.sleep(0.2)
+
     try:
         x, y, width, height = pyautogui.locateOnScreen('deletebutton.png', region=FILEMENU_REGION)
         pyautogui.click(x, y)
@@ -206,8 +208,8 @@ if __name__ == "__main__":
     exitEvent = Event()
     rename()
 
-    keepScanningThread = Thread(target = keepScanning, args=(filenumber, cancelEvent, exitEvent))
-    keepScanningThread.start()
+    trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
+    trackLidThread.start()
 
     while True:
         if keyboard.is_pressed('ctrl+space') and canScan:

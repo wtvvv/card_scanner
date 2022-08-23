@@ -15,6 +15,8 @@ ROTATE_REGION = (900, 15, 250, 75) #set to None if unknown
 LIVEVIEW_REGION = (534, 178, 123, 40)
 canScan = True
 canCancel = False
+lidSignal = False
+trackingLid = False
 
 def scanCard(filenumber, cancelEvent):
     global canScan
@@ -70,9 +72,10 @@ def trackLid(cancelEvent, exitEvent):
     print("start tracking lid")
     global canScan
     global canCancel
-    global filenumber
+    global lidSignal
+
     lidOpen = False
-    ready = False
+    # ready = False
     while not exitEvent.is_set():
         if canScan == False:
             continue
@@ -92,15 +95,17 @@ def trackLid(cancelEvent, exitEvent):
                 exit()
             if pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None:
                 lidOpen = False
-                ready = True
+                # ready = True
+                lidSignal = True
 
-        if ready and canScan:
-            canScan = False
-            canCancel = True
-            scanThread = Thread(target = scanCard, args=(filenumber, cancelEvent))
-            filenumber += 1
-            scanThread.start()
-            ready = False
+        # if ready and canScan:
+        #     canScan = False
+        #     canCancel = True
+        #     scanThread = Thread(target = scanCard, args=(filenumber, cancelEvent))
+        #     filenumber += 1
+        #     scanThread.start()
+        #     ready = False
+    trackingLid = False
     print("finished tracking lid")
 
 def cancelCard(cancelEvent, exitEvent):
@@ -208,11 +213,17 @@ if __name__ == "__main__":
     exitEvent = Event()
     rename()
 
-    trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
-    trackLidThread.start()
+    # trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
+    # trackLidThread.start()
 
     while True:
-        if keyboard.is_pressed('ctrl+space') and canScan:
+        if canScan and not trackingLid:
+            trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
+            trackLidThread.start()
+            trackingLid = True
+
+        if (keyboard.is_pressed('ctrl+space') or lidSignal) and canScan:
+            lidSignal = False
             canScan = False
             canCancel = True
             scanThread = Thread(target = scanCard, args=(filenumber, cancelEvent))

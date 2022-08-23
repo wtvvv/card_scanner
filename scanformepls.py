@@ -68,43 +68,31 @@ def scanCard(filenumber, cancelEvent):
     print("finished scanning")
     exit()
 
-def trackLid(cancelEvent, exitEvent):
+def trackLid(exitEvent):
     print("start tracking lid")
     global canScan
-    global canCancel
     global lidSignal
-
+    global trackingLid
+    
     lidOpen = False
-    # ready = False
-    while not exitEvent.is_set():
-        if canScan == False:
-            continue
-        # proceed to check lid open-close action if canScan==True
+    while canScan:
         print("awaiting lid open")
         while not lidOpen:
             exitEvent.wait(1)
             if exitEvent.is_set():
-                print("exiting keepScanning thread...")
+                print("exiting trackLid thread...")
                 exit()
             if not (pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None):
                 lidOpen = True
         print("awaiting lid close")
         while lidOpen:
             if exitEvent.is_set():
-                print("exiting keepScanning thread...")
+                print("exiting trackLid thread...")
                 exit()
             if pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None:
                 lidOpen = False
-                # ready = True
-                lidSignal = True
-
-        # if ready and canScan:
-        #     canScan = False
-        #     canCancel = True
-        #     scanThread = Thread(target = scanCard, args=(filenumber, cancelEvent))
-        #     filenumber += 1
-        #     scanThread.start()
-        #     ready = False
+                
+    lidSignal = True
     trackingLid = False
     print("finished tracking lid")
 

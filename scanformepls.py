@@ -1,4 +1,3 @@
-from select import select
 import pyautogui
 import keyboard
 import time
@@ -6,21 +5,54 @@ from threading import Thread
 from threading import Event
 import tkinter as tk
 
-gameType = "UGO00"
-cardType = "common"
-filenumber = 0000
+
 FILEMENU_REGION = (5, 286, 320, 708) #set to None if unknown
 YES_OR_RENAME_REGION = (850, 450, 360, 160) #set to None if unknown
 ROTATE_REGION = (900, 15, 250, 75) #set to None if unknown
-LIVEVIEW_REGION = (534, 178, 123, 40)
+LIVEVIEW_REGION = (534, 178, 123, 40) #set to None if unknown
+
+ROTATE_BUTTON = ("rotatebutton.png", ROTATE_REGION)
+NEW_IMAGE_BOX_BUTTON = ("newimagebutton.png", FILEMENU_REGION)
+RENAME_BUTTON = ("renamebutton.png", YES_OR_RENAME_REGION)
+DELETE_BUTTON = ("deletebutton.png", FILEMENU_REGION)
+YES_BUTTON = ("yesbutton.png", YES_OR_RENAME_REGION)
+
+gameType = "UGO00"
+cardType = "common"
+filenumber = 0000
 canScan = True
 canCancel = False
 lidSignal = False
 trackingLid = False
 
-def scanCard(filenumber, cancelEvent):
+def search(button, waitTime, event=None):
+    found = False
+    while not found:
+        time.sleep(waitTime)
+        if event is not None:
+            if event.is_set():
+                exit
+        if not (pyautogui.locateOnScreen(button[0], region = button[1]) is None):
+            found = True
+    x, y = pyautogui.locateOnScreen(button[0], region = button[1])
+    return x, y
+
+def searchCenter(button, waitTime, event=None):
+    found = False
+    while not found:
+        time.sleep(waitTime)
+        if event is not None:
+            if event.is_set():
+                exit
+        if not (pyautogui.locateOnScreen(button[0], region = button[1]) is None):
+            found = True
+    x, y = pyautogui.locateCenterOnScreen(button[0], region = button[1])
+    return x, y
+
+def scanCard(cancelEvent):
     global canScan
     global canCancel
+    global filenumber
     #scan
     print('scanning')
     pyautogui.click(1660, 980)
@@ -60,6 +92,9 @@ def scanCard(filenumber, cancelEvent):
     pyautogui.click(x, y)    
     time.sleep(2)
 
+    #increment filenumber
+    filenumber += 1
+
     #alert
     print('\tshowing alert')
     pyautogui.alert(text='NEEEEEEEEEXXXXXTTTTTTTT CAAAAAARRRRRRRDDDDDDD PLLLEAAASEE', title='Scan finished', button='OK')
@@ -68,33 +103,16 @@ def scanCard(filenumber, cancelEvent):
     print("finished scanning")
     exit()
 
-def trackLid(exitEvent):
-    print("start tracking lid")
-    global canScan
+def startScanThread(cancelEvent):
     global lidSignal
-    global trackingLid
-    
-    lidOpen = False
-    while canScan:
-        print("awaiting lid open")
-        while not lidOpen:
-            exitEvent.wait(1)
-            if exitEvent.is_set():
-                print("exiting trackLid thread...")
-                exit()
-            if not (pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None):
-                lidOpen = True
-        print("awaiting lid close")
-        while lidOpen:
-            if exitEvent.is_set():
-                print("exiting trackLid thread...")
-                exit()
-            if pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None:
-                lidOpen = False
-                
-    lidSignal = True
-    trackingLid = False
-    print("finished tracking lid")
+    global canScan
+    global canCancel
+    if canScan:
+        lidSignal = False
+        canScan = False
+        canCancel = True
+        scanThread = Thread(target = scanCard, args=(cancelEvent))
+        scanThread.start()
 
 def cancelCard(cancelEvent, exitEvent):
     print('cancelling')
@@ -140,7 +158,51 @@ def cancelCard(cancelEvent, exitEvent):
     print("finished cancelling")
     exit()
 
-def submit(root, selectedGameType, selectedCardType, enteredFileNumber):
+def startCancelThread(cancelEvent, exitEvent):
+    global canScan
+    global canCancel
+    if canCancel:
+        canScan = False
+        canCancel = False
+        cancelThread = Thread(target = cancelCard, args=(cancelEvent, exitEvent))
+        cancelThread.start()
+
+def trackLid(exitEvent):
+    print("start tracking lid")
+    global canScan
+    global lidSignal
+    global trackingLid
+    
+    lidOpen = False
+    while canScan:
+        print("awaiting lid open")
+        while not lidOpen:
+            exitEvent.wait(1)
+            if exitEvent.is_set():
+                print("exiting trackLid thread...")
+                exit()
+            if not (pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None):
+                lidOpen = True
+        print("awaiting lid close")
+        while lidOpen:
+            if exitEvent.is_set():
+                print("exiting trackLid thread...")
+                exit()
+            if pyautogui.locateOnScreen('liveview.png', region = LIVEVIEW_REGION) is None:
+                lidOpen = False
+                
+    lidSignal = True
+    trackingLid = False
+    print("finished tracking lid")
+
+def on_closing():
+    cancelEvent.set()
+    print("cancelEvent is set")
+    exitEvent.set()
+    print("exitEvent is set")
+    print("---exiting program---")
+
+def updateFileName(selectedGameType, selectedCardType, enteredFileNumber):
     global gameType
     global cardType
     global filenumber
@@ -150,63 +212,79 @@ def submit(root, selectedGameType, selectedCardType, enteredFileNumber):
         cardType = str(selectedCardType.get())
     if enteredFileNumber.get() != '':
         filenumber = int(enteredFileNumber.get())
-    root.destroy()
 
-def rename():
+    current_name = gameType + str(filenumber) + '_' + cardType + '_12MP'
+    print('name updated: ' + current_name)
+
+def GUI(cancelEvent, exitEvent):
     root = tk.Tk()
     selectedGameType = tk.StringVar(root)
     selectedCardType = tk.StringVar(root)
     enteredFileNumber = tk.StringVar(root)
 
-    tk.Label(root, text = 'Select game type:').grid(column=0, row=0, sticky=tk.W, padx=5, pady=2)
-    tk.Label(root, text = 'Select card type:').grid(column=0, row=2, sticky=tk.W, padx=5, pady=2)
+    # scan_image = tk.PhotoImage(file="GUIscanbutton.png", width=10, height=10)
+    tk.Button(root, 
+            # image = scan_image,
+            text = "Scan",
+            width=30,
+            height=10,
+            command=lambda: startScanThread(cancelEvent)).grid(column = 0, row = 0, pady = 20, columnspan=2)
+    tk.Button(root,
+            text = "Cancel",
+            width=30,
+            height=10,
+            command=lambda: startCancelThread(cancelEvent, exitEvent)).grid(column = 0, row = 1, pady = 20, columnspan=2)
 
-    tk.Radiobutton(root, text = 'Pokemon', variable = selectedGameType, value = "PKM00", tristatevalue=0).grid(column=0, row=1, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Common', variable = selectedCardType, value = "common", tristatevalue=0).grid(column=0, row=3, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = "Holo", variable = selectedCardType, value = "holo", tristatevalue=0).grid(column=0, row=4, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Reverse Holo', variable = selectedCardType, value = "reverse_holo", tristatevalue=0).grid(column=0, row=5, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = "Symbol Holo", variable = selectedCardType, value = "symbol_holo", tristatevalue=0).grid(column=0, row=6, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Full Art Holo', variable = selectedCardType, value = "full_art_holo", tristatevalue=0).grid(column=0, row=7, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = "Full Art Embossed Holo", variable = selectedCardType, value = "full_art_embossed_holo", tristatevalue=0).grid(column=0, row=8, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Full Art Pattern Holo', variable = selectedCardType, value = "full_art_pattern_common", tristatevalue=0).grid(column=0, row=9, sticky=tk.W, padx=5, pady=0.5)
+    tk.Label(root, text = 'Select game type:').grid(column=0, row=2, sticky=tk.W, padx=5, pady=2)
+    tk.Label(root, text = 'Select card type:').grid(column=0, row=4, sticky=tk.W, padx=5, pady=2)
 
-    tk.Radiobutton(root, text = "YuGiOh", variable = selectedGameType, value = "UGO00", tristatevalue=0).grid(column=1, row=1, sticky=tk.W, padx=5, pady=2)
-    tk.Radiobutton(root, text = 'Common', variable = selectedCardType, value = "common", tristatevalue=0).grid(column=1, row=3, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = "Holo", variable = selectedCardType, value = "holo", tristatevalue=0).grid(column=1, row=4, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Silver Foil Holo', variable = selectedCardType, value = "silver_foil_holo", tristatevalue=0).grid(column=1, row=5, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = 'Embossed Holo', variable = selectedCardType, value = "embossed_holo", tristatevalue=0).grid(column=1, row=6, sticky=tk.W, padx=5, pady=0.5)
-    tk.Radiobutton(root, text = "Half Art Paral", variable = selectedCardType, value = "half_art_paral", tristatevalue=0).grid(column=1, row=7, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Pokemon', variable = selectedGameType, value = "PKM00", tristatevalue=0).grid(column=0, row=3, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Common', variable = selectedCardType, value = "common", tristatevalue=0).grid(column=0, row=5, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = "Holo", variable = selectedCardType, value = "holo", tristatevalue=0).grid(column=0, row=6, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Reverse Holo', variable = selectedCardType, value = "reverse_holo", tristatevalue=0).grid(column=0, row=7, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = "Symbol Holo", variable = selectedCardType, value = "symbol_holo", tristatevalue=0).grid(column=0, row=8, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Full Art Holo', variable = selectedCardType, value = "full_art_holo", tristatevalue=0).grid(column=0, row=9, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = "Full Art Embossed Holo", variable = selectedCardType, value = "full_art_embossed_holo", tristatevalue=0).grid(column=0, row=10, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Full Art Pattern Holo', variable = selectedCardType, value = "full_art_pattern_common", tristatevalue=0).grid(column=0, row=11, sticky=tk.W, padx=5, pady=0.5)
 
-    tk.Label(root, text = 'Enter new file number:').grid(column=0, row=13, sticky=tk.W, padx=5, pady=7)
-    tk.Entry(root, textvariable = enteredFileNumber).grid(column=1, row=13, sticky=tk.W, padx=5, pady=7)
+    tk.Radiobutton(root, text = "YuGiOh", variable = selectedGameType, value = "UGO00", tristatevalue=0).grid(column=1, row=3, sticky=tk.W, padx=5, pady=2)
+    tk.Radiobutton(root, text = 'Common', variable = selectedCardType, value = "common", tristatevalue=0).grid(column=1, row=5, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = "Holo", variable = selectedCardType, value = "holo", tristatevalue=0).grid(column=1, row=6, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Silver Foil Holo', variable = selectedCardType, value = "silver_foil_holo", tristatevalue=0).grid(column=1, row=7, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = 'Embossed Holo', variable = selectedCardType, value = "embossed_holo", tristatevalue=0).grid(column=1, row=8, sticky=tk.W, padx=5, pady=0.5)
+    tk.Radiobutton(root, text = "Half Art Paral", variable = selectedCardType, value = "half_art_paral", tristatevalue=0).grid(column=1, row=9, sticky=tk.W, padx=5, pady=0.5)
 
-    tk.Button(root,text = "Submit", command=lambda: submit(root, selectedGameType, selectedCardType, enteredFileNumber)).grid(column=0, row=14, sticky=tk.E, padx=5, pady=5)
-    tk.Button(root,text = "Cancel", command=root.destroy).grid(column=1, row=14, sticky=tk.W, padx=5, pady=5)
+    tk.Label(root, text = 'Enter new file number:').grid(column=0, row=15, sticky=tk.W, padx=5, pady=7)
+    tk.Spinbox(root, from_=0, textvariable=enteredFileNumber).grid(column=1, row=15, sticky=tk.W, padx=5, pady=7)
+    tk.Button(root,text = "Update", command=lambda: updateFileName(selectedGameType, selectedCardType, enteredFileNumber)).grid(column=0, row=16, sticky=tk.EW, padx=5, pady=5, columnspan=2)
 
+    ws = root.winfo_screenwidth() # width of the screen
+    hs = root.winfo_screenheight() # height of the screen
+    root.geometry(f'600x{str(hs)}+{ws-600}+0') # set placement of window
+    root.protocol("WM_DELETE_WINDOW", on_closing) # call end program handler (set cancelEvent and exitEvent)
     tk.mainloop()
-    return gameType + str(filenumber) + '_' + cardType + '_12MP'
 
 if __name__ == "__main__":
     #go to Regula software
-    try:
-        regulaX, regulaY = pyautogui.locateCenterOnScreen('regulabutton.png')
-        pyautogui.click(regulaX, regulaY)
-    except TypeError as e:
-        print(e)
-        pass
-    pyautogui.alert('set to 12MP and single-page format')
+    # try:
+    #     regulaX, regulaY = pyautogui.locateCenterOnScreen('regulabutton.png')
+    #     pyautogui.click(regulaX, regulaY)
+    # except TypeError as e:
+    #     print(e)
+    #     pass
+    # pyautogui.alert('set to 12MP and single-page format')
 
     #setup
     cancelEvent = Event()
     exitEvent = Event()
-    rename()
+    GUI(cancelEvent, exitEvent)
 
     # trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
     # trackLidThread.start()
 
     while True:
         if canScan and not trackingLid:
-            trackLidThread = Thread(target = trackLid, args=(cancelEvent, exitEvent))
+            trackLidThread = Thread(target = trackLid, args=(exitEvent, ))
             trackLidThread.start()
             trackingLid = True
 
@@ -214,7 +292,7 @@ if __name__ == "__main__":
             lidSignal = False
             canScan = False
             canCancel = True
-            scanThread = Thread(target = scanCard, args=(filenumber, cancelEvent))
+            scanThread = Thread(target = scanCard, args=(cancelEvent))
             scanThread.start()
             filenumber += 1
 
@@ -257,9 +335,12 @@ if __name__ == "__main__":
         
     print('exiting main thread...')
 
-#turn button presses into a function?!!!
-#def buttonpress():
-
 #implement dynamic click for scan, rotate, and cancel!!!
-#implement clicking regulabutton before clicking anything else!!!
 #change ALL time.sleep(x) into event.wait(x)
+
+
+#implement clicking regulabutton before clicking anything else
+###turn button presses into a function
+###implement: trackLid
+###implement: disable "Update" button when scanning/cancelling (i.e. if canScan and not canCancel)
+###implement: "Calibrate" function to remap scan/cancel/rotate button positions

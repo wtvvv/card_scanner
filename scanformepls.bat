@@ -10,5 +10,5 @@ cd desktop\scanformepls
 echo opened project directory
 
 rem python script file path
-python "C:\Users\Scanning\Desktop\scanformepls\scanformepls.py"
+python "C:\Users\Scanning\Desktop\scanformepls\scanformeplsgui.py"
 pause

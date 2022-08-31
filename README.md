@@ -3,8 +3,9 @@
 ## Setup
 Modify batch file and create desktop shortcut (to the batch file) for use
 
-## Use
+## Use for keyboard version
 ```ctrl+space```: start scan
+Scanning will also start automatically on close of lid
 
 ```ctrl+x```: cancel scan
 
@@ -15,3 +16,5 @@ Modify batch file and create desktop shortcut (to the batch file) for use
 ```ctrl+down```: decrement file-number
 
 ```esc```: end program
+
+## Use of GUI version
